@@ -1,0 +1,2327 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>math.Sch — Kalkulator Matematika</title>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --black: #0A0A0A;
+    --dark: #1A1A1A;
+    --mid: #444;
+    --gray: #888;
+    --light-gray: #D4D4D4;
+    --off-white: #F5F5F5;
+    --white: #FFFFFF;
+    --grid-color: rgba(0,0,0,0.06);
+  }
+
+  body {
+    font-family: 'Space Grotesk', sans-serif;
+    background: var(--white);
+    color: var(--black);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Grid paper background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--grid-color) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid-color) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* HEADER */
+  header {
+    position: relative;
+    z-index: 10;
+    background: var(--black);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 3px solid var(--black);
+  }
+
+  .logo {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+  }
+
+  .logo-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -1px;
+  }
+
+  .logo-badge {
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--gray);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    border: 1px solid var(--gray);
+    padding: 2px 8px;
+    border-radius: 2px;
+  }
+
+  header p {
+    font-size: 0.8rem;
+    color: var(--gray);
+    letter-spacing: 1px;
+  }
+
+  /* LAYOUT */
+  .container {
+    position: relative;
+    z-index: 1;
+    flex: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 28px 20px;
+  }
+
+  /* HAMBURGER BUTTON */
+  .hamburger {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    padding: 6px;
+    border-radius: 6px;
+    transition: background 0.15s;
+  }
+  .hamburger:hover { background: rgba(255,255,255,0.1); }
+  .hamburger span {
+    display: block;
+    width: 24px;
+    height: 2px;
+    background: var(--white);
+    border-radius: 2px;
+    transition: all 0.25s;
+  }
+  .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+  .hamburger.open span:nth-child(2) { opacity: 0; transform: scaleX(0); }
+  .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+  /* DRAWER OVERLAY */
+  .drawer-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 99;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.25s;
+  }
+  .drawer-overlay.show { opacity: 1; pointer-events: all; }
+
+  /* DRAWER */
+  .drawer {
+    position: fixed;
+    top: 0;
+    left: 0;
+    height: 100%;
+    width: 280px;
+    background: var(--black);
+    z-index: 100;
+    transform: translateX(-100%);
+    transition: transform 0.28s cubic-bezier(0.4,0,0.2,1);
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+  }
+  .drawer.open { transform: translateX(0); }
+
+  .drawer-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    flex-shrink: 0;
+  }
+
+  .drawer-logo {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--white);
+    letter-spacing: -0.5px;
+  }
+
+  .drawer-close {
+    background: none;
+    border: none;
+    color: var(--gray);
+    font-size: 1.3rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: color 0.15s;
+  }
+  .drawer-close:hover { color: var(--white); }
+
+  .drawer-label {
+    font-size: 0.6rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.3);
+    padding: 20px 20px 8px;
+  }
+
+  .nav-btn {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 12px 20px;
+    background: transparent;
+    border: none;
+    border-left: 3px solid transparent;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: rgba(255,255,255,0.55);
+    cursor: pointer;
+    text-align: left;
+    transition: all 0.15s;
+  }
+  .nav-btn:hover {
+    background: rgba(255,255,255,0.06);
+    color: var(--white);
+    border-left-color: rgba(255,255,255,0.2);
+  }
+  .nav-btn.active {
+    background: rgba(255,255,255,0.1);
+    color: var(--white);
+    border-left-color: var(--white);
+    font-weight: 600;
+  }
+
+  .nav-icon {
+    font-size: 1rem;
+    width: 22px;
+    text-align: center;
+    flex-shrink: 0;
+  }
+
+  /* ACTIVE PANEL TITLE BAR */
+  .panel-topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 20px;
+  }
+
+  .menu-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    background: var(--off-white);
+    border: 1.5px solid var(--light-gray);
+    border-radius: 20px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--mid);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .menu-pill:hover { border-color: var(--black); color: var(--black); }
+  .menu-pill-icon { font-size: 0.9rem; }
+
+  /* MAIN PANEL */
+  .main { flex: 1; }
+
+  .panel {
+    display: none;
+    background: var(--white);
+    border: 1.5px solid var(--black);
+    border-radius: 8px;
+    padding: 32px;
+    box-shadow: 4px 4px 0 var(--black);
+  }
+
+  .panel.active { display: block; }
+
+  .panel-title {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+  }
+
+  .panel-sub {
+    font-size: 0.82rem;
+    color: var(--gray);
+    margin-bottom: 28px;
+    padding-bottom: 20px;
+    border-bottom: 1px solid var(--off-white);
+  }
+
+  /* CALCULATOR BASIC */
+  .calc-display {
+    background: var(--black);
+    border-radius: 6px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+
+  .calc-expr {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    color: var(--gray);
+    min-height: 20px;
+    margin-bottom: 8px;
+    text-align: right;
+    overflow-x: auto;
+  }
+
+  .calc-result {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 2.2rem;
+    font-weight: 700;
+    color: var(--white);
+    text-align: right;
+    word-break: break-all;
+  }
+
+  .calc-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+
+  .btn {
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.1rem;
+    font-weight: 600;
+    padding: 16px 8px;
+    border: 1.5px solid var(--light-gray);
+    border-radius: 6px;
+    cursor: pointer;
+    background: var(--white);
+    color: var(--black);
+    transition: all 0.1s;
+  }
+
+  .btn:hover { background: var(--off-white); }
+  .btn:active { transform: scale(0.97); }
+
+  .btn-op {
+    background: var(--off-white);
+    border-color: var(--light-gray);
+    color: var(--black);
+  }
+
+  .btn-eq {
+    background: var(--black);
+    color: var(--white);
+    border-color: var(--black);
+  }
+
+  .btn-eq:hover { background: var(--dark); }
+
+  .btn-clear {
+    background: var(--white);
+    color: #c00;
+    border-color: var(--light-gray);
+    font-size: 0.9rem;
+  }
+
+  .btn-span2 { grid-column: span 2; }
+
+  /* FORM STYLES */
+  .form-group {
+    margin-bottom: 18px;
+  }
+
+  .form-group label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    color: var(--mid);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+
+  .form-group input, .form-group select, .form-group textarea {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--light-gray);
+    border-radius: 6px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    color: var(--black);
+    background: var(--white);
+    transition: border-color 0.15s;
+  }
+
+  .form-group input:focus, .form-group select:focus {
+    outline: none;
+    border-color: var(--black);
+  }
+
+  .btn-calc {
+    padding: 12px 28px;
+    background: var(--black);
+    color: var(--white);
+    border: 1.5px solid var(--black);
+    border-radius: 6px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 0.5px;
+    transition: all 0.15s;
+    margin-top: 4px;
+    box-shadow: 3px 3px 0 var(--dark);
+  }
+
+  .btn-calc:hover { transform: translate(-1px, -1px); box-shadow: 4px 4px 0 var(--dark); }
+  .btn-calc:active { transform: translate(1px, 1px); box-shadow: 2px 2px 0 var(--dark); }
+
+  /* RESULT BOX */
+  .result-box {
+    margin-top: 20px;
+    padding: 18px 20px;
+    background: var(--off-white);
+    border: 1.5px solid var(--black);
+    border-radius: 6px;
+    display: none;
+  }
+
+  .result-box.show { display: block; }
+
+  .result-label {
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gray);
+    margin-bottom: 8px;
+  }
+
+  .result-value {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--black);
+  }
+
+  .result-detail {
+    font-size: 0.85rem;
+    color: var(--mid);
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+
+  /* ROW INPUTS */
+  .row-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+  }
+
+  .row-inputs-3 {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 14px;
+  }
+
+  /* TABS within panel */
+  .sub-tabs {
+    display: flex;
+    gap: 6px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+  }
+
+  .sub-tab {
+    padding: 7px 16px;
+    border: 1.5px solid var(--light-gray);
+    border-radius: 4px;
+    background: var(--white);
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    color: var(--mid);
+    transition: all 0.15s;
+  }
+
+  .sub-tab:hover { border-color: var(--black); color: var(--black); }
+  .sub-tab.active { background: var(--black); color: var(--white); border-color: var(--black); }
+
+  .sub-panel { display: none; }
+  .sub-panel.active { display: block; }
+
+  /* Steps */
+  .steps {
+    margin-top: 14px;
+    border-top: 1px dashed var(--light-gray);
+    padding-top: 14px;
+  }
+
+  .steps-title {
+    font-size: 0.72rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--gray);
+    margin-bottom: 10px;
+  }
+
+  .step-item {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 8px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+
+  .step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--gray);
+    background: var(--off-white);
+    border: 1px solid var(--light-gray);
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 1px;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 3px;
+    background: var(--black);
+    color: var(--white);
+    letter-spacing: 0.5px;
+    margin-right: 6px;
+  }
+
+  /* Matrix display */
+  .matrix-wrap {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 10px;
+  }
+
+  .matrix-bracket {
+    font-size: 2rem;
+    color: var(--black);
+    line-height: 1;
+  }
+
+  .matrix-body {
+    display: grid;
+    gap: 6px;
+  }
+
+  .matrix-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .matrix-cell {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    font-weight: 500;
+    min-width: 40px;
+    text-align: center;
+  }
+
+  /* Responsive */
+  @media (max-width: 600px) {
+    .container { padding: 16px; }
+    .sub-tabs { gap: 4px; }
+    .row-inputs, .row-inputs-3 { grid-template-columns: 1fr; }
+    header { padding: 14px 16px; }
+    .panel { padding: 18px 16px; }
+    .drawer { width: 260px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- DRAWER OVERLAY -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+
+<!-- DRAWER -->
+<aside class="drawer" id="drawer">
+  <div class="drawer-header">
+    <span class="drawer-logo">math.Sch</span>
+    <button class="drawer-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-label">Pilih Fitur</div>
+  <button class="nav-btn active" onclick="showPanel('biasa')">
+    <span class="nav-icon">🔢</span> Kalkulator Biasa
+  </button>
+  <button class="nav-btn" onclick="showPanel('kpkfpb')">
+    <span class="nav-icon">÷</span> KPK & FPB
+  </button>
+  <button class="nav-btn" onclick="showPanel('aljabar')">
+    <span class="nav-icon">𝑥</span> Aljabar
+  </button>
+  <button class="nav-btn" onclick="showPanel('persamaan')">
+    <span class="nav-icon">=</span> Persamaan Linear
+  </button>
+  <button class="nav-btn" onclick="showPanel('pythagoras')">
+    <span class="nav-icon">△</span> Pythagoras
+  </button>
+  <button class="nav-btn" onclick="showPanel('bangun')">
+    <span class="nav-icon">⬜</span> Bangun Datar
+  </button>
+  <button class="nav-btn" onclick="showPanel('persen')">
+    <span class="nav-icon">%</span> Persentase & Rasio
+  </button>
+  <button class="nav-btn" onclick="showPanel('statistik')">
+    <span class="nav-icon">📊</span> Statistika
+  </button>
+  <button class="nav-btn" onclick="showPanel('bilangan')">
+    <span class="nav-icon">±</span> Bilangan Bulat
+  </button>
+  <button class="nav-btn" onclick="showPanel('ruang')">
+    <span class="nav-icon">⬡</span> Bangun Ruang
+  </button>
+  <button class="nav-btn" onclick="showPanel('skala')">
+    <span class="nav-icon">⇔</span> Skala & Perbandingan
+  </button>
+  <button class="nav-btn" onclick="showPanel('konversi')">
+    <span class="nav-icon">↔</span> Konversi Satuan
+  </button>
+</aside>
+
+<header>
+  <div style="display:flex;align-items:center;gap:14px;">
+    <button class="hamburger" id="hamburger-btn" onclick="toggleDrawer()">
+      <span></span><span></span><span></span>
+    </button>
+    <div class="logo">
+      <span class="logo-text">math.Sch</span>
+      <span class="logo-badge">Kalkulator</span>
+    </div>
+  </div>
+
+</header>
+
+<div class="container">
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- KALKULATOR BIASA -->
+    <div class="panel active" id="panel-biasa">
+      <div class="panel-title">Kalkulator Biasa</div>
+      <div class="panel-sub">Hitung operasi matematika dasar</div>
+      <div class="calc-display">
+        <div class="calc-expr" id="calc-expr"></div>
+        <div class="calc-result" id="calc-result">0</div>
+      </div>
+      <div class="calc-grid">
+        <button class="btn btn-clear" onclick="calcClear()">C</button>
+        <button class="btn btn-op" onclick="calcInput('(')">(</button>
+        <button class="btn btn-op" onclick="calcInput(')')">)</button>
+        <button class="btn btn-op" onclick="calcInput('/'">÷</button>
+
+        <button class="btn" onclick="calcInput('7')">7</button>
+        <button class="btn" onclick="calcInput('8')">8</button>
+        <button class="btn" onclick="calcInput('9')">9</button>
+        <button class="btn btn-op" onclick="calcInput('*')">×</button>
+
+        <button class="btn" onclick="calcInput('4')">4</button>
+        <button class="btn" onclick="calcInput('5')">5</button>
+        <button class="btn" onclick="calcInput('6')">6</button>
+        <button class="btn btn-op" onclick="calcInput('-')">−</button>
+
+        <button class="btn" onclick="calcInput('1')">1</button>
+        <button class="btn" onclick="calcInput('2')">2</button>
+        <button class="btn" onclick="calcInput('3')">3</button>
+        <button class="btn btn-op" onclick="calcInput('+')">+</button>
+
+        <button class="btn" onclick="calcInput('0')">0</button>
+        <button class="btn" onclick="calcInput('.')">.</button>
+        <button class="btn btn-op" onclick="calcBackspace()">⌫</button>
+        <button class="btn btn-eq" onclick="calcEqual()">=</button>
+
+        <button class="btn btn-op btn-span2" onclick="calcInput('Math.sqrt(')">√ Akar</button>
+        <button class="btn btn-op btn-span2" onclick="calcInput('**2')">x²</button>
+      </div>
+    </div>
+
+    <!-- KPK & FPB -->
+    <div class="panel" id="panel-kpkfpb">
+      <div class="panel-title">KPK & FPB</div>
+      <div class="panel-sub">Kelipatan Persekutuan Terkecil & Faktor Persekutuan Terbesar</div>
+
+      <div class="sub-tabs">
+        <button class="sub-tab active" onclick="showSubTab('kpkfpb', 'kpk')">KPK</button>
+        <button class="sub-tab" onclick="showSubTab('kpkfpb', 'fpb')">FPB</button>
+        <button class="sub-tab" onclick="showSubTab('kpkfpb', 'keduanya')">KPK & FPB</button>
+      </div>
+
+      <div class="sub-panel active" id="kpkfpb-kpk">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Bilangan Pertama</label>
+            <input type="number" id="kpk-a" placeholder="misal: 12" min="1">
+          </div>
+          <div class="form-group">
+            <label>Bilangan Kedua</label>
+            <input type="number" id="kpk-b" placeholder="misal: 18" min="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Bilangan Ketiga <span style="font-weight:400;color:var(--gray);text-transform:none;letter-spacing:0">(opsional)</span></label>
+          <input type="number" id="kpk-c" placeholder="kosongkan jika tidak perlu" min="1">
+        </div>
+        <button class="btn-calc" onclick="hitungKPK()">Hitung KPK</button>
+        <div class="result-box" id="kpk-result">
+          <div class="result-label">KPK</div>
+          <div class="result-value" id="kpk-val"></div>
+          <div class="steps" id="kpk-steps"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="kpkfpb-fpb">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Bilangan Pertama</label>
+            <input type="number" id="fpb-a" placeholder="misal: 24" min="1">
+          </div>
+          <div class="form-group">
+            <label>Bilangan Kedua</label>
+            <input type="number" id="fpb-b" placeholder="misal: 36" min="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Bilangan Ketiga <span style="font-weight:400;color:var(--gray);text-transform:none;letter-spacing:0">(opsional)</span></label>
+          <input type="number" id="fpb-c" placeholder="kosongkan jika tidak perlu" min="1">
+        </div>
+        <button class="btn-calc" onclick="hitungFPB()">Hitung FPB</button>
+        <div class="result-box" id="fpb-result">
+          <div class="result-label">FPB</div>
+          <div class="result-value" id="fpb-val"></div>
+          <div class="steps" id="fpb-steps"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="kpkfpb-keduanya">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Bilangan Pertama</label>
+            <input type="number" id="both-a" placeholder="misal: 8" min="1">
+          </div>
+          <div class="form-group">
+            <label>Bilangan Kedua</label>
+            <input type="number" id="both-b" placeholder="misal: 12" min="1">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Bilangan Ketiga <span style="font-weight:400;color:var(--gray);text-transform:none;letter-spacing:0">(opsional)</span></label>
+          <input type="number" id="both-c" placeholder="kosongkan jika tidak perlu" min="1">
+        </div>
+        <button class="btn-calc" onclick="hitungKeduanya()">Hitung</button>
+        <div class="result-box" id="both-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="both-val"></div>
+          <div class="steps" id="both-steps"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ALJABAR -->
+    <div class="panel" id="panel-aljabar">
+      <div class="panel-title">Aljabar</div>
+      <div class="panel-sub">Operasi dan penyederhanaan ekspresi aljabar</div>
+
+      <div class="sub-tabs">
+        <button class="sub-tab active" onclick="showSubTab('aljabar', 'spldv')">SPLDV</button>
+        <button class="sub-tab" onclick="showSubTab('aljabar', 'kuadrat')">Persamaan Kuadrat</button>
+        <button class="sub-tab" onclick="showSubTab('aljabar', 'pangkat')">Pangkat & Akar</button>
+      </div>
+
+      <!-- SPLDV -->
+      <div class="sub-panel active" id="aljabar-spldv">
+        <p style="font-size:0.85rem;color:var(--gray);margin-bottom:16px;">Sistem Persamaan Linear Dua Variabel: ax + by = c</p>
+        <div style="background:var(--off-white);border-radius:6px;padding:16px 20px;margin-bottom:20px;border:1px solid var(--light-gray);">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:0.9rem;margin-bottom:12px;color:var(--gray);">Persamaan 1: ax + by = c</div>
+          <div class="row-inputs-3">
+            <div class="form-group" style="margin-bottom:0">
+              <label>a</label>
+              <input type="number" id="sp-a1" placeholder="2">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>b</label>
+              <input type="number" id="sp-b1" placeholder="3">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>c</label>
+              <input type="number" id="sp-c1" placeholder="7">
+            </div>
+          </div>
+        </div>
+        <div style="background:var(--off-white);border-radius:6px;padding:16px 20px;margin-bottom:20px;border:1px solid var(--light-gray);">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:0.9rem;margin-bottom:12px;color:var(--gray);">Persamaan 2: ax + by = c</div>
+          <div class="row-inputs-3">
+            <div class="form-group" style="margin-bottom:0">
+              <label>a</label>
+              <input type="number" id="sp-a2" placeholder="1">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>b</label>
+              <input type="number" id="sp-b2" placeholder="2">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label>c</label>
+              <input type="number" id="sp-c2" placeholder="5">
+            </div>
+          </div>
+        </div>
+        <button class="btn-calc" onclick="hitungSPLDV()">Selesaikan</button>
+        <div class="result-box" id="spldv-result">
+          <div class="result-label">Solusi</div>
+          <div class="result-value" id="spldv-val"></div>
+          <div class="steps" id="spldv-steps"></div>
+        </div>
+      </div>
+
+      <!-- KUADRAT -->
+      <div class="sub-panel" id="aljabar-kuadrat">
+        <p style="font-size:0.85rem;color:var(--gray);margin-bottom:16px;">Persamaan Kuadrat: ax² + bx + c = 0</p>
+        <div class="row-inputs-3">
+          <div class="form-group">
+            <label>a (koefisien x²)</label>
+            <input type="number" id="kd-a" placeholder="1">
+          </div>
+          <div class="form-group">
+            <label>b (koefisien x)</label>
+            <input type="number" id="kd-b" placeholder="-5">
+          </div>
+          <div class="form-group">
+            <label>c (konstanta)</label>
+            <input type="number" id="kd-c" placeholder="6">
+          </div>
+        </div>
+        <button class="btn-calc" onclick="hitungKuadrat()">Cari Akar</button>
+        <div class="result-box" id="kd-result">
+          <div class="result-label">Akar-akar Persamaan</div>
+          <div class="result-value" id="kd-val"></div>
+          <div class="steps" id="kd-steps"></div>
+        </div>
+      </div>
+
+      <!-- PANGKAT -->
+      <div class="sub-panel" id="aljabar-pangkat">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Bilangan (basis)</label>
+            <input type="number" id="pk-base" placeholder="3">
+          </div>
+          <div class="form-group">
+            <label>Pangkat</label>
+            <input type="number" id="pk-exp" placeholder="4">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Akar ke-n (n)</label>
+          <input type="number" id="pk-root" placeholder="2 untuk akar kuadrat">
+        </div>
+        <button class="btn-calc" onclick="hitungPangkat()">Hitung</button>
+        <div class="result-box" id="pk-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="pk-val"></div>
+          <div class="result-detail" id="pk-detail"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERSAMAAN LINEAR -->
+    <div class="panel" id="panel-persamaan">
+      <div class="panel-title">Persamaan Linear Satu Variabel</div>
+      <div class="panel-sub">Selesaikan persamaan bentuk ax + b = c</div>
+      <div class="row-inputs-3">
+        <div class="form-group">
+          <label>a (koefisien x)</label>
+          <input type="number" id="pl-a" placeholder="3">
+        </div>
+        <div class="form-group">
+          <label>b (konstanta kiri)</label>
+          <input type="number" id="pl-b" placeholder="5">
+        </div>
+        <div class="form-group">
+          <label>c (ruas kanan)</label>
+          <input type="number" id="pl-c" placeholder="14">
+        </div>
+      </div>
+      <p style="font-size:0.8rem;color:var(--gray);margin-bottom:16px;">Persamaan: ax + b = c</p>
+      <button class="btn-calc" onclick="hitungPLSV()">Selesaikan</button>
+      <div class="result-box" id="pl-result">
+        <div class="result-label">Nilai x</div>
+        <div class="result-value" id="pl-val"></div>
+        <div class="steps" id="pl-steps"></div>
+      </div>
+    </div>
+
+    <!-- PYTHAGORAS -->
+    <div class="panel" id="panel-pythagoras">
+      <div class="panel-title">Teorema Pythagoras</div>
+      <div class="panel-sub">a² + b² = c² — isi dua sisi, hitung sisi ketiga</div>
+
+      <div class="sub-tabs">
+        <button class="sub-tab active" onclick="showSubTab('pyth', 'hipotenusa')">Cari Hipotenusa (c)</button>
+        <button class="sub-tab" onclick="showSubTab('pyth', 'sisi')">Cari Sisi (a atau b)</button>
+      </div>
+
+      <div class="sub-panel active" id="pyth-hipotenusa">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Sisi a</label>
+            <input type="number" id="py-a" placeholder="3">
+          </div>
+          <div class="form-group">
+            <label>Sisi b</label>
+            <input type="number" id="py-b" placeholder="4">
+          </div>
+        </div>
+        <button class="btn-calc" onclick="hitungPyth1()">Cari c</button>
+        <div class="result-box" id="py1-result">
+          <div class="result-label">Hipotenusa (c)</div>
+          <div class="result-value" id="py1-val"></div>
+          <div class="result-detail" id="py1-detail"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="pyth-sisi">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Hipotenusa (c)</label>
+            <input type="number" id="py-c2" placeholder="5">
+          </div>
+          <div class="form-group">
+            <label>Sisi yang diketahui (a atau b)</label>
+            <input type="number" id="py-ab" placeholder="3">
+          </div>
+        </div>
+        <button class="btn-calc" onclick="hitungPyth2()">Cari sisi lainnya</button>
+        <div class="result-box" id="py2-result">
+          <div class="result-label">Sisi yang dicari</div>
+          <div class="result-value" id="py2-val"></div>
+          <div class="result-detail" id="py2-detail"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BANGUN DATAR -->
+    <div class="panel" id="panel-bangun">
+      <div class="panel-title">Bangun Datar</div>
+      <div class="panel-sub">Luas dan keliling berbagai bangun datar</div>
+
+      <div class="sub-tabs">
+        <button class="sub-tab active" onclick="showSubTab('bangun', 'persegi')">Persegi</button>
+        <button class="sub-tab" onclick="showSubTab('bangun', 'persegipanjang')">Persegi Panjang</button>
+        <button class="sub-tab" onclick="showSubTab('bangun', 'segitiga')">Segitiga</button>
+        <button class="sub-tab" onclick="showSubTab('bangun', 'lingkaran')">Lingkaran</button>
+        <button class="sub-tab" onclick="showSubTab('bangun', 'trapesium')">Trapesium</button>
+        <button class="sub-tab" onclick="showSubTab('bangun', 'jajar')">Jajar Genjang</button>
+      </div>
+
+      <div class="sub-panel active" id="bangun-persegi">
+        <div class="form-group">
+          <label>Sisi (s)</label>
+          <input type="number" id="psg-s" placeholder="6">
+        </div>
+        <button class="btn-calc" onclick="hitungPersegi()">Hitung</button>
+        <div class="result-box" id="psg-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="psg-val"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="bangun-persegipanjang">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Panjang (p)</label>
+            <input type="number" id="pp-p" placeholder="8">
+          </div>
+          <div class="form-group">
+            <label>Lebar (l)</label>
+            <input type="number" id="pp-l" placeholder="5">
+          </div>
+        </div>
+        <button class="btn-calc" onclick="hitungPersegiPanjang()">Hitung</button>
+        <div class="result-box" id="pp-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="pp-val"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="bangun-segitiga">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Alas (a)</label>
+            <input type="number" id="sg-a" placeholder="10">
+          </div>
+          <div class="form-group">
+            <label>Tinggi (t)</label>
+            <input type="number" id="sg-t" placeholder="6">
+          </div>
+        </div>
+        <div class="row-inputs-3">
+          <div class="form-group">
+            <label>Sisi 1</label>
+            <input type="number" id="sg-s1" placeholder="untuk keliling">
+          </div>
+          <div class="form-group">
+            <label>Sisi 2</label>
+            <input type="number" id="sg-s2" placeholder="untuk keliling">
+          </div>
+          <div class="form-group">
+            <label>Sisi 3</label>
+            <input type="number" id="sg-s3" placeholder="untuk keliling">
+          </div>
+        </div>
+        <button class="btn-calc" onclick="hitungSegitiga()">Hitung</button>
+        <div class="result-box" id="sg-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="sg-val"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="bangun-lingkaran">
+        <div class="form-group">
+          <label>Jari-jari (r)</label>
+          <input type="number" id="lg-r" placeholder="7">
+        </div>
+        <button class="btn-calc" onclick="hitungLingkaran()">Hitung</button>
+        <div class="result-box" id="lg-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="lg-val"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="bangun-trapesium">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Sisi sejajar 1 (a)</label>
+            <input type="number" id="tp-a" placeholder="8">
+          </div>
+          <div class="form-group">
+            <label>Sisi sejajar 2 (b)</label>
+            <input type="number" id="tp-b" placeholder="5">
+          </div>
+        </div>
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Tinggi (t)</label>
+            <input type="number" id="tp-t" placeholder="4">
+          </div>
+          <div class="form-group">
+            <label>Jumlah sisi miring (opsional)</label>
+            <input type="number" id="tp-m" placeholder="untuk keliling">
+          </div>
+        </div>
+        <button class="btn-calc" onclick="hitungTrapesium()">Hitung</button>
+        <div class="result-box" id="tp-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="tp-val"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="bangun-jajar">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Alas (a)</label>
+            <input type="number" id="jj-a" placeholder="9">
+          </div>
+          <div class="form-group">
+            <label>Tinggi (t)</label>
+            <input type="number" id="jj-t" placeholder="5">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Sisi miring (untuk keliling)</label>
+          <input type="number" id="jj-s" placeholder="6">
+        </div>
+        <button class="btn-calc" onclick="hitungJajar()">Hitung</button>
+        <div class="result-box" id="jj-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="jj-val"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PERSENTASE & RASIO -->
+    <div class="panel" id="panel-persen">
+      <div class="panel-title">Persentase & Rasio</div>
+      <div class="panel-sub">Hitung persen, diskon, bunga, dan perbandingan</div>
+
+      <div class="sub-tabs">
+        <button class="sub-tab active" onclick="showSubTab('persen', 'persen')">Persentase</button>
+        <button class="sub-tab" onclick="showSubTab('persen', 'diskon')">Diskon</button>
+        <button class="sub-tab" onclick="showSubTab('persen', 'bunga')">Bunga Sederhana</button>
+        <button class="sub-tab" onclick="showSubTab('persen', 'rasio')">Rasio</button>
+      </div>
+
+      <div class="sub-panel active" id="persen-persen">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Nilai</label>
+            <input type="number" id="ps-nilai" placeholder="25">
+          </div>
+          <div class="form-group">
+            <label>Total</label>
+            <input type="number" id="ps-total" placeholder="100">
+          </div>
+        </div>
+        <button class="btn-calc" onclick="hitungPersen()">Hitung %</button>
+        <div class="result-box" id="ps-result">
+          <div class="result-label">Persentase</div>
+          <div class="result-value" id="ps-val"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="persen-diskon">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Harga Asal (Rp)</label>
+            <input type="number" id="dk-harga" placeholder="150000">
+          </div>
+          <div class="form-group">
+            <label>Diskon (%)</label>
+            <input type="number" id="dk-persen" placeholder="20">
+          </div>
+        </div>
+        <button class="btn-calc" onclick="hitungDiskon()">Hitung Diskon</button>
+        <div class="result-box" id="dk-result">
+          <div class="result-label">Harga Setelah Diskon</div>
+          <div class="result-value" id="dk-val"></div>
+          <div class="result-detail" id="dk-detail"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="persen-bunga">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Modal (Rp)</label>
+            <input type="number" id="bg-modal" placeholder="5000000">
+          </div>
+          <div class="form-group">
+            <label>Bunga per tahun (%)</label>
+            <input type="number" id="bg-rate" placeholder="10">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Waktu (bulan)</label>
+          <input type="number" id="bg-waktu" placeholder="12">
+        </div>
+        <button class="btn-calc" onclick="hitungBunga()">Hitung</button>
+        <div class="result-box" id="bg-result">
+          <div class="result-label">Total</div>
+          <div class="result-value" id="bg-val"></div>
+          <div class="result-detail" id="bg-detail"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="persen-rasio">
+        <p style="font-size:0.85rem;color:var(--gray);margin-bottom:16px;">Bagi nilai berdasarkan rasio a : b</p>
+        <div class="row-inputs-3">
+          <div class="form-group">
+            <label>Total nilai</label>
+            <input type="number" id="rs-total" placeholder="120">
+          </div>
+          <div class="form-group">
+            <label>Rasio a</label>
+            <input type="number" id="rs-a" placeholder="3">
+          </div>
+          <div class="form-group">
+            <label>Rasio b</label>
+            <input type="number" id="rs-b" placeholder="5">
+          </div>
+        </div>
+        <button class="btn-calc" onclick="hitungRasio()">Bagi</button>
+        <div class="result-box" id="rs-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="rs-val"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- STATISTIKA -->
+    <div class="panel" id="panel-statistik">
+      <div class="panel-title">Statistika</div>
+      <div class="panel-sub">Mean, median, modus, dan jangkauan data</div>
+      <div class="form-group">
+        <label>Data (pisahkan dengan koma)</label>
+        <input type="text" id="stat-data" placeholder="4, 7, 2, 9, 4, 6, 4, 8, 3">
+      </div>
+      <button class="btn-calc" onclick="hitungStatistik()">Analisis</button>
+      <div class="result-box" id="stat-result">
+        <div class="result-label">Hasil Analisis</div>
+        <div class="result-value" id="stat-val"></div>
+        <div class="result-detail" id="stat-detail"></div>
+      </div>
+    </div>
+
+    <!-- BILANGAN BULAT -->
+    <div class="panel" id="panel-bilangan">
+      <div class="panel-title">Bilangan Bulat</div>
+      <div class="panel-sub">Faktorisasi, bilangan prima, dan operasi bilangan</div>
+
+      <div class="sub-tabs">
+        <button class="sub-tab active" onclick="showSubTab('bilangan', 'faktor')">Faktorisasi</button>
+        <button class="sub-tab" onclick="showSubTab('bilangan', 'prima')">Cek Bilangan Prima</button>
+        <button class="sub-tab" onclick="showSubTab('bilangan', 'listprima')">Daftar Bilangan Prima</button>
+      </div>
+
+      <div class="sub-panel active" id="bilangan-faktor">
+        <div class="form-group">
+          <label>Bilangan</label>
+          <input type="number" id="fk-n" placeholder="60" min="2">
+        </div>
+        <button class="btn-calc" onclick="hitungFaktor()">Faktorkan</button>
+        <div class="result-box" id="fk-result">
+          <div class="result-label">Faktorisasi Prima</div>
+          <div class="result-value" id="fk-val"></div>
+          <div class="result-detail" id="fk-detail"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="bilangan-prima">
+        <div class="form-group">
+          <label>Bilangan</label>
+          <input type="number" id="pr-n" placeholder="17" min="2">
+        </div>
+        <button class="btn-calc" onclick="cekPrima()">Cek</button>
+        <div class="result-box" id="pr-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="pr-val"></div>
+          <div class="result-detail" id="pr-detail"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="bilangan-listprima">
+        <div class="form-group">
+          <label>Daftar bilangan prima dari 2 sampai</label>
+          <input type="number" id="lp-n" placeholder="50" min="2" max="500">
+        </div>
+        <button class="btn-calc" onclick="listPrima()">Tampilkan</button>
+        <div class="result-box" id="lp-result">
+          <div class="result-label">Bilangan Prima</div>
+          <div class="result-value" id="lp-val" style="font-size:1rem;line-height:1.8;"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- BANGUN RUANG -->
+    <div class="panel" id="panel-ruang">
+      <div class="panel-title">Bangun Ruang</div>
+      <div class="panel-sub">Volume dan luas permukaan bangun ruang 3D</div>
+
+      <div class="sub-tabs">
+        <button class="sub-tab active" onclick="showSubTab('ruang', 'kubus')">Kubus</button>
+        <button class="sub-tab" onclick="showSubTab('ruang', 'balok')">Balok</button>
+        <button class="sub-tab" onclick="showSubTab('ruang', 'tabung')">Tabung</button>
+        <button class="sub-tab" onclick="showSubTab('ruang', 'kerucut')">Kerucut</button>
+        <button class="sub-tab" onclick="showSubTab('ruang', 'bola')">Bola</button>
+        <button class="sub-tab" onclick="showSubTab('ruang', 'prisma')">Prisma Segitiga</button>
+      </div>
+
+      <div class="sub-panel active" id="ruang-kubus">
+        <div class="form-group">
+          <label>Sisi (s)</label>
+          <input type="number" id="kb-s" placeholder="5">
+        </div>
+        <button class="btn-calc" onclick="hitungKubus()">Hitung</button>
+        <div class="result-box" id="kb-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="kb-val"></div>
+          <div class="result-detail" id="kb-detail"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="ruang-balok">
+        <div class="row-inputs-3">
+          <div class="form-group"><label>Panjang (p)</label><input type="number" id="bl-p" placeholder="8"></div>
+          <div class="form-group"><label>Lebar (l)</label><input type="number" id="bl-l" placeholder="5"></div>
+          <div class="form-group"><label>Tinggi (t)</label><input type="number" id="bl-t" placeholder="3"></div>
+        </div>
+        <button class="btn-calc" onclick="hitungBalok()">Hitung</button>
+        <div class="result-box" id="bl-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="bl-val"></div>
+          <div class="result-detail" id="bl-detail"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="ruang-tabung">
+        <div class="row-inputs">
+          <div class="form-group"><label>Jari-jari (r)</label><input type="number" id="tb-r" placeholder="7"></div>
+          <div class="form-group"><label>Tinggi (t)</label><input type="number" id="tb-t" placeholder="10"></div>
+        </div>
+        <button class="btn-calc" onclick="hitungTabung()">Hitung</button>
+        <div class="result-box" id="tb-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="tb-val"></div>
+          <div class="result-detail" id="tb-detail"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="ruang-kerucut">
+        <div class="row-inputs">
+          <div class="form-group"><label>Jari-jari alas (r)</label><input type="number" id="kr-r" placeholder="6"></div>
+          <div class="form-group"><label>Tinggi (t)</label><input type="number" id="kr-t" placeholder="8"></div>
+        </div>
+        <button class="btn-calc" onclick="hitungKerucut()">Hitung</button>
+        <div class="result-box" id="kr-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="kr-val"></div>
+          <div class="result-detail" id="kr-detail"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="ruang-bola">
+        <div class="form-group">
+          <label>Jari-jari (r)</label>
+          <input type="number" id="bo-r" placeholder="7">
+        </div>
+        <button class="btn-calc" onclick="hitungBola()">Hitung</button>
+        <div class="result-box" id="bo-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="bo-val"></div>
+          <div class="result-detail" id="bo-detail"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="ruang-prisma">
+        <div class="row-inputs-3">
+          <div class="form-group"><label>Alas segitiga (a)</label><input type="number" id="pr2-a" placeholder="6"></div>
+          <div class="form-group"><label>Tinggi segitiga (t)</label><input type="number" id="pr2-t" placeholder="4"></div>
+          <div class="form-group"><label>Panjang prisma (p)</label><input type="number" id="pr2-p" placeholder="10"></div>
+        </div>
+        <p style="font-size:0.8rem;color:var(--gray);margin-bottom:14px;">Sisi miring segitiga (untuk luas permukaan)</p>
+        <div class="row-inputs-3">
+          <div class="form-group"><label>Sisi 1</label><input type="number" id="pr2-s1" placeholder="5"></div>
+          <div class="form-group"><label>Sisi 2</label><input type="number" id="pr2-s2" placeholder="5"></div>
+          <div class="form-group"><label>Sisi 3 (alas)</label><input type="number" id="pr2-s3" placeholder="6"></div>
+        </div>
+        <button class="btn-calc" onclick="hitungPrisma()">Hitung</button>
+        <div class="result-box" id="pr2-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="pr2-val"></div>
+          <div class="result-detail" id="pr2-detail"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SKALA & PERBANDINGAN -->
+    <div class="panel" id="panel-skala">
+      <div class="panel-title">Skala & Perbandingan</div>
+      <div class="panel-sub">Skala peta, perbandingan senilai, dan berbalik nilai</div>
+
+      <div class="sub-tabs">
+        <button class="sub-tab active" onclick="showSubTab('skala', 'peta')">Skala Peta</button>
+        <button class="sub-tab" onclick="showSubTab('skala', 'senilai')">Perbandingan Senilai</button>
+        <button class="sub-tab" onclick="showSubTab('skala', 'balik')">Perbandingan Berbalik Nilai</button>
+      </div>
+
+      <div class="sub-panel active" id="skala-peta">
+        <p style="font-size:0.85rem;color:var(--gray);margin-bottom:16px;">Skala = Jarak Peta : Jarak Nyata</p>
+        <div class="sub-tabs" style="margin-bottom:16px;">
+          <button class="sub-tab active" onclick="showSubTabNested('petamode','carireal')" id="petamode-carireal-btn">Cari Jarak Nyata</button>
+          <button class="sub-tab" onclick="showSubTabNested('petamode','caripeta')" id="petamode-caripeta-btn">Cari Jarak Peta</button>
+          <button class="sub-tab" onclick="showSubTabNested('petamode','cariskala')" id="petamode-cariskala-btn">Cari Skala</button>
+        </div>
+        <div id="petamode-carireal">
+          <div class="row-inputs">
+            <div class="form-group"><label>Skala (1 : n)</label><input type="number" id="sk-scale1" placeholder="500000"></div>
+            <div class="form-group"><label>Jarak di peta (cm)</label><input type="number" id="sk-peta1" placeholder="3"></div>
+          </div>
+          <button class="btn-calc" onclick="hitungSkala1()">Hitung Jarak Nyata</button>
+          <div class="result-box" id="sk1-result">
+            <div class="result-label">Jarak Nyata</div>
+            <div class="result-value" id="sk1-val"></div>
+            <div class="result-detail" id="sk1-detail"></div>
+          </div>
+        </div>
+        <div id="petamode-caripeta" style="display:none">
+          <div class="row-inputs">
+            <div class="form-group"><label>Skala (1 : n)</label><input type="number" id="sk-scale2" placeholder="500000"></div>
+            <div class="form-group"><label>Jarak nyata (km)</label><input type="number" id="sk-nyata2" placeholder="15"></div>
+          </div>
+          <button class="btn-calc" onclick="hitungSkala2()">Hitung Jarak Peta</button>
+          <div class="result-box" id="sk2-result">
+            <div class="result-label">Jarak di Peta</div>
+            <div class="result-value" id="sk2-val"></div>
+            <div class="result-detail" id="sk2-detail"></div>
+          </div>
+        </div>
+        <div id="petamode-cariskala" style="display:none">
+          <div class="row-inputs">
+            <div class="form-group"><label>Jarak di peta (cm)</label><input type="number" id="sk-peta3" placeholder="4"></div>
+            <div class="form-group"><label>Jarak nyata (km)</label><input type="number" id="sk-nyata3" placeholder="20"></div>
+          </div>
+          <button class="btn-calc" onclick="hitungSkala3()">Hitung Skala</button>
+          <div class="result-box" id="sk3-result">
+            <div class="result-label">Skala</div>
+            <div class="result-value" id="sk3-val"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="skala-senilai">
+        <p style="font-size:0.85rem;color:var(--gray);margin-bottom:16px;">Jika a bertambah maka b bertambah. Cari nilai yang belum diketahui.</p>
+        <div style="background:var(--off-white);border-radius:6px;padding:16px;margin-bottom:16px;border:1px solid var(--light-gray);font-family:'JetBrains Mono',monospace;font-size:0.9rem;">
+          a₁ / b₁ = a₂ / b₂
+        </div>
+        <div class="row-inputs">
+          <div class="form-group"><label>a₁</label><input type="number" id="sn-a1" placeholder="3"></div>
+          <div class="form-group"><label>b₁</label><input type="number" id="sn-b1" placeholder="6"></div>
+        </div>
+        <div class="row-inputs">
+          <div class="form-group"><label>a₂</label><input type="number" id="sn-a2" placeholder="5"></div>
+          <div class="form-group"><label>b₂ (yang dicari — kosongkan)</label><input type="number" id="sn-b2" placeholder="?"></div>
+        </div>
+        <button class="btn-calc" onclick="hitungSenilai()">Hitung</button>
+        <div class="result-box" id="sn-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="sn-val"></div>
+          <div class="steps" id="sn-steps"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="skala-balik">
+        <p style="font-size:0.85rem;color:var(--gray);margin-bottom:16px;">Jika a bertambah maka b berkurang. Misal: kecepatan vs waktu.</p>
+        <div style="background:var(--off-white);border-radius:6px;padding:16px;margin-bottom:16px;border:1px solid var(--light-gray);font-family:'JetBrains Mono',monospace;font-size:0.9rem;">
+          a₁ × b₁ = a₂ × b₂
+        </div>
+        <div class="row-inputs">
+          <div class="form-group"><label>a₁</label><input type="number" id="bv-a1" placeholder="4"></div>
+          <div class="form-group"><label>b₁</label><input type="number" id="bv-b1" placeholder="6"></div>
+        </div>
+        <div class="row-inputs">
+          <div class="form-group"><label>a₂</label><input type="number" id="bv-a2" placeholder="8"></div>
+          <div class="form-group"><label>b₂ (yang dicari — kosongkan)</label><input type="number" id="bv-b2" placeholder="?"></div>
+        </div>
+        <button class="btn-calc" onclick="hitungBerbalik()">Hitung</button>
+        <div class="result-box" id="bv-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="bv-val"></div>
+          <div class="steps" id="bv-steps"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KONVERSI SATUAN -->
+    <div class="panel" id="panel-konversi">
+      <div class="panel-title">Konversi Satuan</div>
+      <div class="panel-sub">Panjang, berat, waktu, suhu, dan luas</div>
+
+      <div class="sub-tabs">
+        <button class="sub-tab active" onclick="showSubTab('konversi', 'panjang')">Panjang</button>
+        <button class="sub-tab" onclick="showSubTab('konversi', 'berat')">Berat</button>
+        <button class="sub-tab" onclick="showSubTab('konversi', 'waktu')">Waktu</button>
+        <button class="sub-tab" onclick="showSubTab('konversi', 'suhu')">Suhu</button>
+        <button class="sub-tab" onclick="showSubTab('konversi', 'luas')">Luas</button>
+      </div>
+
+      <div class="sub-panel active" id="konversi-panjang">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Nilai</label>
+            <input type="number" id="kv-p-val" placeholder="100">
+          </div>
+          <div class="form-group">
+            <label>Dari Satuan</label>
+            <select id="kv-p-from">
+              <option value="km">km</option>
+              <option value="hm">hm</option>
+              <option value="dam">dam</option>
+              <option value="m" selected>m</option>
+              <option value="dm">dm</option>
+              <option value="cm">cm</option>
+              <option value="mm">mm</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Ke Satuan</label>
+            <select id="kv-p-to">
+              <option value="km">km</option>
+              <option value="hm">hm</option>
+              <option value="dam">dam</option>
+              <option value="m">m</option>
+              <option value="dm">dm</option>
+              <option value="cm" selected>cm</option>
+              <option value="mm">mm</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-calc" onclick="konversiPanjang()">Konversi</button>
+        <div class="result-box" id="kvp-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="kvp-val"></div>
+          <div class="result-detail" id="kvp-detail"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="konversi-berat">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Nilai</label>
+            <input type="number" id="kv-b-val" placeholder="2">
+          </div>
+          <div class="form-group">
+            <label>Dari Satuan</label>
+            <select id="kv-b-from">
+              <option value="ton">ton</option>
+              <option value="kw">kuintal</option>
+              <option value="kg" selected>kg</option>
+              <option value="hg">hg (ons)</option>
+              <option value="dag">dag</option>
+              <option value="g">g</option>
+              <option value="mg">mg</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Ke Satuan</label>
+            <select id="kv-b-to">
+              <option value="ton">ton</option>
+              <option value="kw">kuintal</option>
+              <option value="kg">kg</option>
+              <option value="hg">hg (ons)</option>
+              <option value="dag">dag</option>
+              <option value="g" selected>g</option>
+              <option value="mg">mg</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-calc" onclick="konversiBerat()">Konversi</button>
+        <div class="result-box" id="kvb-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="kvb-val"></div>
+          <div class="result-detail" id="kvb-detail"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="konversi-waktu">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Nilai</label>
+            <input type="number" id="kv-w-val" placeholder="2">
+          </div>
+          <div class="form-group">
+            <label>Dari Satuan</label>
+            <select id="kv-w-from">
+              <option value="tahun">tahun</option>
+              <option value="bulan">bulan</option>
+              <option value="minggu">minggu</option>
+              <option value="hari" selected>hari</option>
+              <option value="jam">jam</option>
+              <option value="menit">menit</option>
+              <option value="detik">detik</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Ke Satuan</label>
+            <select id="kv-w-to">
+              <option value="tahun">tahun</option>
+              <option value="bulan">bulan</option>
+              <option value="minggu">minggu</option>
+              <option value="hari">hari</option>
+              <option value="jam" selected>jam</option>
+              <option value="menit">menit</option>
+              <option value="detik">detik</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-calc" onclick="konversiWaktu()">Konversi</button>
+        <div class="result-box" id="kvw-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="kvw-val"></div>
+          <div class="result-detail" id="kvw-detail"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="konversi-suhu">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Nilai</label>
+            <input type="number" id="kv-s-val" placeholder="100">
+          </div>
+          <div class="form-group">
+            <label>Dari</label>
+            <select id="kv-s-from">
+              <option value="C" selected>Celsius (°C)</option>
+              <option value="F">Fahrenheit (°F)</option>
+              <option value="K">Kelvin (K)</option>
+              <option value="R">Reamur (°R)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Ke</label>
+            <select id="kv-s-to">
+              <option value="C">Celsius (°C)</option>
+              <option value="F" selected>Fahrenheit (°F)</option>
+              <option value="K">Kelvin (K)</option>
+              <option value="R">Reamur (°R)</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-calc" onclick="konversiSuhu()">Konversi</button>
+        <div class="result-box" id="kvs-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="kvs-val"></div>
+          <div class="result-detail" id="kvs-detail"></div>
+        </div>
+      </div>
+
+      <div class="sub-panel" id="konversi-luas">
+        <div class="row-inputs">
+          <div class="form-group">
+            <label>Nilai</label>
+            <input type="number" id="kv-l-val" placeholder="1">
+          </div>
+          <div class="form-group">
+            <label>Dari Satuan</label>
+            <select id="kv-l-from">
+              <option value="km2">km²</option>
+              <option value="hm2">hm² (hektar)</option>
+              <option value="dam2">dam² (are)</option>
+              <option value="m2" selected>m²</option>
+              <option value="dm2">dm²</option>
+              <option value="cm2">cm²</option>
+              <option value="mm2">mm²</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Ke Satuan</label>
+            <select id="kv-l-to">
+              <option value="km2">km²</option>
+              <option value="hm2">hm² (hektar)</option>
+              <option value="dam2">dam² (are)</option>
+              <option value="m2">m²</option>
+              <option value="dm2">dm²</option>
+              <option value="cm2" selected>cm²</option>
+              <option value="mm2">mm²</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn-calc" onclick="konversiLuas()">Konversi</button>
+        <div class="result-box" id="kvl-result">
+          <div class="result-label">Hasil</div>
+          <div class="result-value" id="kvl-val"></div>
+          <div class="result-detail" id="kvl-detail"></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ================== DRAWER ==================
+function toggleDrawer() {
+  const drawer = document.getElementById('drawer');
+  const overlay = document.getElementById('drawer-overlay');
+  const btn = document.getElementById('hamburger-btn');
+  const isOpen = drawer.classList.contains('open');
+  if (isOpen) { closeDrawer(); } else {
+    drawer.classList.add('open');
+    overlay.classList.add('show');
+    btn.classList.add('open');
+    document.body.style.overflow = 'hidden';
+  }
+}
+function closeDrawer() {
+  document.getElementById('drawer').classList.remove('open');
+  document.getElementById('drawer-overlay').classList.remove('show');
+  document.getElementById('hamburger-btn').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+// ================== NAVIGATION ==================
+const panelLabels = {
+  biasa: {icon:'🔢', label:'Kalkulator Biasa'},
+  kpkfpb: {icon:'÷', label:'KPK & FPB'},
+  aljabar: {icon:'𝑥', label:'Aljabar'},
+  persamaan: {icon:'=', label:'Persamaan Linear'},
+  pythagoras: {icon:'△', label:'Pythagoras'},
+  bangun: {icon:'⬜', label:'Bangun Datar'},
+  persen: {icon:'%', label:'Persentase & Rasio'},
+  statistik: {icon:'📊', label:'Statistika'},
+  bilangan: {icon:'±', label:'Bilangan Bulat'},
+  ruang: {icon:'⬡', label:'Bangun Ruang'},
+  skala: {icon:'⇔', label:'Skala & Perbandingan'},
+  konversi: {icon:'↔', label:'Konversi Satuan'},
+};
+
+function showPanel(id) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + id).classList.add('active');
+  if (event && event.currentTarget) event.currentTarget.classList.add('active');
+  closeDrawer();
+}
+
+function showSubTab(group, id) {
+  const parent = event.currentTarget.closest('.panel') || document.getElementById('panel-' + group);
+  parent.querySelectorAll('.sub-tab').forEach(t => t.classList.remove('active'));
+  parent.querySelectorAll('.sub-panel').forEach(p => p.classList.remove('active'));
+  event.currentTarget.classList.add('active');
+  document.getElementById(group + '-' + id).classList.add('active');
+}
+
+function showResult(id, val, detail, steps) {
+  const box = document.getElementById(id);
+  box.classList.add('show');
+  if (val !== undefined) document.getElementById(id.replace('-result','') + '-val').innerHTML = val;
+  if (detail) { const d = box.querySelector('.result-detail'); if(d) d.innerHTML = detail; }
+  if (steps) { const s = box.querySelector('.steps'); if(s) s.innerHTML = '<div class="steps-title">Langkah Penyelesaian</div>' + steps; }
+}
+
+// ================== KALKULATOR BIASA ==================
+let calcExpr = '';
+let calcDisplayExpr = '';
+
+function calcInput(val) {
+  const displayMap = {'*':'×', '/':'÷', 'Math.sqrt(':'√(', '**2':'²'};
+  calcExpr += val;
+  calcDisplayExpr += displayMap[val] || val;
+  document.getElementById('calc-expr').textContent = calcDisplayExpr;
+  try {
+    let preview = eval(calcExpr.replace(/Math\.sqrt/g, 'Math.sqrt'));
+    if (isFinite(preview)) document.getElementById('calc-result').textContent = +preview.toFixed(10);
+  } catch(e) {}
+}
+
+function calcClear() {
+  calcExpr = ''; calcDisplayExpr = '';
+  document.getElementById('calc-expr').textContent = '';
+  document.getElementById('calc-result').textContent = '0';
+}
+
+function calcBackspace() {
+  // Simple approach: clear last char
+  calcExpr = calcExpr.slice(0, -1);
+  calcDisplayExpr = calcDisplayExpr.slice(0, -1);
+  document.getElementById('calc-expr').textContent = calcDisplayExpr;
+}
+
+function calcEqual() {
+  try {
+    let result = eval(calcExpr);
+    document.getElementById('calc-result').textContent = +result.toFixed(10);
+    document.getElementById('calc-expr').textContent = calcDisplayExpr + ' =';
+    calcExpr = String(result);
+    calcDisplayExpr = String(result);
+  } catch(e) {
+    document.getElementById('calc-result').textContent = 'Error';
+  }
+}
+
+// ================== KPK & FPB ==================
+function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+function lcm(a, b) { return (a * b) / gcd(a, b); }
+
+function primeFactors(n) {
+  const factors = [];
+  let d = 2;
+  while (n > 1) {
+    while (n % d === 0) { factors.push(d); n /= d; }
+    d++;
+  }
+  return factors;
+}
+
+function groupFactors(arr) {
+  const map = {};
+  arr.forEach(f => map[f] = (map[f] || 0) + 1);
+  return map;
+}
+
+function formatFactors(n) {
+  const f = primeFactors(n);
+  const g = groupFactors(f);
+  return Object.entries(g).map(([p, e]) => e > 1 ? `${p}<sup>${e}</sup>` : p).join(' × ');
+}
+
+function hitungKPK() {
+  const a = parseInt(document.getElementById('kpk-a').value);
+  const b = parseInt(document.getElementById('kpk-b').value);
+  const cVal = document.getElementById('kpk-c').value;
+  const c = cVal !== '' ? parseInt(cVal) : null;
+  if (!a || !b) return;
+  const result12 = lcm(a, b);
+  const result = c ? lcm(result12, c) : result12;
+  const bilangan = c ? `${a}, ${b}, ${c}` : `${a}, ${b}`;
+  const steps = c
+    ? `<div class="step-item"><div class="step-num">1</div><div>Faktorisasi prima: ${a} = ${formatFactors(a)}, &nbsp; ${b} = ${formatFactors(b)}, &nbsp; ${c} = ${formatFactors(c)}</div></div>
+       <div class="step-item"><div class="step-num">2</div><div>KPK = ambil faktor prima dengan <b>pangkat terbesar</b> dari semua bilangan</div></div>
+       <div class="step-item"><div class="step-num">3</div><div>KPK(${a}, ${b}) = ${result12}, lalu KPK(${result12}, ${c}) = <b>${result}</b></div></div>`
+    : `<div class="step-item"><div class="step-num">1</div><div>Faktorisasi prima: ${a} = ${formatFactors(a)}, &nbsp; ${b} = ${formatFactors(b)}</div></div>
+       <div class="step-item"><div class="step-num">2</div><div>KPK = ambil faktor prima dengan <b>pangkat terbesar</b></div></div>
+       <div class="step-item"><div class="step-num">3</div><div>KPK(${a}, ${b}) = <b>${result}</b></div></div>`;
+  showResult('kpk-result', `KPK(${bilangan}) = ${result}`, null, steps);
+}
+
+function hitungFPB() {
+  const a = parseInt(document.getElementById('fpb-a').value);
+  const b = parseInt(document.getElementById('fpb-b').value);
+  const cVal = document.getElementById('fpb-c').value;
+  const c = cVal !== '' ? parseInt(cVal) : null;
+  if (!a || !b) return;
+  const result12 = gcd(a, b);
+  const result = c ? gcd(result12, c) : result12;
+  const bilangan = c ? `${a}, ${b}, ${c}` : `${a}, ${b}`;
+  const steps = c
+    ? `<div class="step-item"><div class="step-num">1</div><div>Faktorisasi prima: ${a} = ${formatFactors(a)}, &nbsp; ${b} = ${formatFactors(b)}, &nbsp; ${c} = ${formatFactors(c)}</div></div>
+       <div class="step-item"><div class="step-num">2</div><div>FPB = ambil faktor prima <b>yang sama</b> dengan pangkat terkecil dari semua bilangan</div></div>
+       <div class="step-item"><div class="step-num">3</div><div>FPB(${a}, ${b}) = ${result12}, lalu FPB(${result12}, ${c}) = <b>${result}</b></div></div>`
+    : `<div class="step-item"><div class="step-num">1</div><div>Faktorisasi prima: ${a} = ${formatFactors(a)}, &nbsp; ${b} = ${formatFactors(b)}</div></div>
+       <div class="step-item"><div class="step-num">2</div><div>FPB = ambil faktor prima <b>yang sama</b> dengan pangkat terkecil</div></div>
+       <div class="step-item"><div class="step-num">3</div><div>FPB(${a}, ${b}) = <b>${result}</b></div></div>`;
+  showResult('fpb-result', `FPB(${bilangan}) = ${result}`, null, steps);
+}
+
+function hitungKeduanya() {
+  const a = parseInt(document.getElementById('both-a').value);
+  const b = parseInt(document.getElementById('both-b').value);
+  const cVal = document.getElementById('both-c').value;
+  const c = cVal !== '' ? parseInt(cVal) : null;
+  if (!a || !b) return;
+  const kpk12 = lcm(a, b);
+  const fpb12 = gcd(a, b);
+  const kpk = c ? lcm(kpk12, c) : kpk12;
+  const fpb = c ? gcd(fpb12, c) : fpb12;
+  const bilangan = c ? `${a}, ${b}, ${c}` : `${a}, ${b}`;
+  document.getElementById('both-result').classList.add('show');
+  document.getElementById('both-val').innerHTML = `KPK = <b>${kpk}</b> &nbsp;|&nbsp; FPB = <b>${fpb}</b>`;
+  document.getElementById('both-steps').innerHTML = `
+    <div class="steps-title">Faktorisasi Prima</div>
+    <div class="step-item"><div class="step-num">a</div><div>${a} = ${formatFactors(a)}</div></div>
+    <div class="step-item"><div class="step-num">b</div><div>${b} = ${formatFactors(b)}</div></div>
+    ${c ? `<div class="step-item"><div class="step-num">c</div><div>${c} = ${formatFactors(c)}</div></div>` : ''}
+    <div class="step-item"><div class="step-num">✓</div><div>KPK(${bilangan}) = <b>${kpk}</b>, FPB(${bilangan}) = <b>${fpb}</b></div></div>
+  `;
+}
+
+// ================== ALJABAR ==================
+function hitungSPLDV() {
+  const a1 = parseFloat(document.getElementById('sp-a1').value);
+  const b1 = parseFloat(document.getElementById('sp-b1').value);
+  const c1 = parseFloat(document.getElementById('sp-c1').value);
+  const a2 = parseFloat(document.getElementById('sp-a2').value);
+  const b2 = parseFloat(document.getElementById('sp-b2').value);
+  const c2 = parseFloat(document.getElementById('sp-c2').value);
+  const det = a1*b2 - a2*b1;
+  if (det === 0) { showResult('spldv-result', 'Tidak ada solusi unik', null, ''); return; }
+  const x = (c1*b2 - c2*b1) / det;
+  const y = (a1*c2 - a2*c1) / det;
+  const steps = `
+    <div class="step-item"><div class="step-num">1</div><div>Pers. 1: ${a1}x + ${b1}y = ${c1}</div></div>
+    <div class="step-item"><div class="step-num">2</div><div>Pers. 2: ${a2}x + ${b2}y = ${c2}</div></div>
+    <div class="step-item"><div class="step-num">3</div><div>Metode Cramer: Det = ${a1}×${b2} − ${a2}×${b1} = ${det}</div></div>
+    <div class="step-item"><div class="step-num">4</div><div>x = ${+x.toFixed(4)}, &nbsp; y = ${+y.toFixed(4)}</div></div>
+  `;
+  showResult('spldv-result', `x = ${+x.toFixed(4)}, &nbsp; y = ${+y.toFixed(4)}`, null, steps);
+}
+
+function hitungKuadrat() {
+  const a = parseFloat(document.getElementById('kd-a').value);
+  const b = parseFloat(document.getElementById('kd-b').value);
+  const c = parseFloat(document.getElementById('kd-c').value);
+  const D = b*b - 4*a*c;
+  let val, steps;
+  steps = `
+    <div class="step-item"><div class="step-num">1</div><div>Diskriminan D = b² − 4ac = ${b}² − 4×${a}×${c} = <b>${D}</b></div></div>
+  `;
+  if (D > 0) {
+    const x1 = (-b + Math.sqrt(D)) / (2*a);
+    const x2 = (-b - Math.sqrt(D)) / (2*a);
+    val = `x₁ = ${+x1.toFixed(4)}, &nbsp; x₂ = ${+x2.toFixed(4)}`;
+    steps += `<div class="step-item"><div class="step-num">2</div><div>D > 0 → dua akar real berbeda</div></div>
+    <div class="step-item"><div class="step-num">3</div><div>x = (−b ± √D) / 2a → x₁ = ${+x1.toFixed(4)}, x₂ = ${+x2.toFixed(4)}</div></div>`;
+  } else if (D === 0) {
+    const x = -b / (2*a);
+    val = `x = ${+x.toFixed(4)} (akar kembar)`;
+    steps += `<div class="step-item"><div class="step-num">2</div><div>D = 0 → akar kembar: x = −b/2a = ${+x.toFixed(4)}</div></div>`;
+  } else {
+    val = 'Tidak ada akar real (D < 0)';
+    steps += `<div class="step-item"><div class="step-num">2</div><div>D < 0 → tidak ada akar real</div></div>`;
+  }
+  showResult('kd-result', val, null, steps);
+}
+
+function hitungPangkat() {
+  const base = parseFloat(document.getElementById('pk-base').value);
+  const exp = parseFloat(document.getElementById('pk-exp').value);
+  const root = parseFloat(document.getElementById('pk-root').value);
+  let detail = '';
+  let val = '';
+  if (!isNaN(base) && !isNaN(exp)) {
+    const p = Math.pow(base, exp);
+    val += `${base}<sup>${exp}</sup> = <b>${+p.toFixed(6)}</b>`;
+    detail += `${base}^${exp} = ${+p.toFixed(6)}`;
+  }
+  if (!isNaN(base) && !isNaN(root)) {
+    const r = Math.pow(base, 1/root);
+    val += `${val ? '<br>' : ''}<sup>${root}</sup>√${base} = <b>${+r.toFixed(6)}</b>`;
+    detail += `\n${root}-akar dari ${base} = ${+r.toFixed(6)}`;
+  }
+  if (!val) return;
+  document.getElementById('pk-result').classList.add('show');
+  document.getElementById('pk-val').innerHTML = val;
+  document.getElementById('pk-detail').textContent = detail;
+}
+
+// ================== PERSAMAAN LINEAR ==================
+function hitungPLSV() {
+  const a = parseFloat(document.getElementById('pl-a').value);
+  const b = parseFloat(document.getElementById('pl-b').value);
+  const c = parseFloat(document.getElementById('pl-c').value);
+  const x = (c - b) / a;
+  const steps = `
+    <div class="step-item"><div class="step-num">1</div><div>Persamaan: ${a}x + ${b} = ${c}</div></div>
+    <div class="step-item"><div class="step-num">2</div><div>${a}x = ${c} − ${b} = ${c - b}</div></div>
+    <div class="step-item"><div class="step-num">3</div><div>x = ${c-b} ÷ ${a} = <b>${+x.toFixed(4)}</b></div></div>
+    <div class="step-item"><div class="step-num">✓</div><div>Verifikasi: ${a}×${+x.toFixed(4)} + ${b} = ${+(a*x+b).toFixed(4)} ✔</div></div>
+  `;
+  showResult('pl-result', `x = ${+x.toFixed(4)}`, null, steps);
+}
+
+// ================== PYTHAGORAS ==================
+function hitungPyth1() {
+  const a = parseFloat(document.getElementById('py-a').value);
+  const b = parseFloat(document.getElementById('py-b').value);
+  const c = Math.sqrt(a*a + b*b);
+  document.getElementById('py1-result').classList.add('show');
+  document.getElementById('py1-val').textContent = +c.toFixed(4);
+  document.getElementById('py1-detail').innerHTML = `a² + b² = c² → ${a}² + ${b}² = ${a*a} + ${b*b} = ${a*a+b*b} → c = √${a*a+b*b} = ${+c.toFixed(4)}`;
+}
+
+function hitungPyth2() {
+  const c = parseFloat(document.getElementById('py-c2').value);
+  const ab = parseFloat(document.getElementById('py-ab').value);
+  const other = Math.sqrt(c*c - ab*ab);
+  document.getElementById('py2-result').classList.add('show');
+  document.getElementById('py2-val').textContent = isNaN(other) ? 'Tidak valid' : +other.toFixed(4);
+  document.getElementById('py2-detail').innerHTML = `c² − a² = b² → ${c}² − ${ab}² = ${c*c} − ${ab*ab} = ${c*c - ab*ab} → b = ${+other.toFixed(4)}`;
+}
+
+// ================== BANGUN DATAR ==================
+function showBangun(id, val) {
+  document.getElementById(id).classList.add('show');
+  document.getElementById(id.replace('-result','') + '-val').innerHTML = val;
+}
+
+function hitungPersegi() {
+  const s = parseFloat(document.getElementById('psg-s').value);
+  showBangun('psg-result', `Luas = ${s}² = <b>${s*s}</b> &nbsp;|&nbsp; Keliling = 4×${s} = <b>${4*s}</b>`);
+}
+
+function hitungPersegiPanjang() {
+  const p = parseFloat(document.getElementById('pp-p').value);
+  const l = parseFloat(document.getElementById('pp-l').value);
+  showBangun('pp-result', `Luas = ${p}×${l} = <b>${p*l}</b> &nbsp;|&nbsp; Keliling = 2×(${p}+${l}) = <b>${2*(p+l)}</b>`);
+}
+
+function hitungSegitiga() {
+  const a = parseFloat(document.getElementById('sg-a').value);
+  const t = parseFloat(document.getElementById('sg-t').value);
+  const s1 = parseFloat(document.getElementById('sg-s1').value);
+  const s2 = parseFloat(document.getElementById('sg-s2').value);
+  const s3 = parseFloat(document.getElementById('sg-s3').value);
+  const L = 0.5 * a * t;
+  const K = (!isNaN(s1)&&!isNaN(s2)&&!isNaN(s3)) ? s1+s2+s3 : '?';
+  showBangun('sg-result', `Luas = ½×${a}×${t} = <b>${L}</b> &nbsp;|&nbsp; Keliling = <b>${K}</b>`);
+}
+
+function hitungLingkaran() {
+  const r = parseFloat(document.getElementById('lg-r').value);
+  const L = +(Math.PI * r * r).toFixed(4);
+  const K = +(2 * Math.PI * r).toFixed(4);
+  showBangun('lg-result', `Luas = π×${r}² = <b>${L}</b> &nbsp;|&nbsp; Keliling = 2π×${r} = <b>${K}</b>`);
+}
+
+function hitungTrapesium() {
+  const a = parseFloat(document.getElementById('tp-a').value);
+  const b = parseFloat(document.getElementById('tp-b').value);
+  const t = parseFloat(document.getElementById('tp-t').value);
+  const m = parseFloat(document.getElementById('tp-m').value);
+  const L = 0.5 * (a + b) * t;
+  const K = (!isNaN(m)) ? a + b + m : '?';
+  showBangun('tp-result', `Luas = ½×(${a}+${b})×${t} = <b>${L}</b> &nbsp;|&nbsp; Keliling = <b>${K}</b>`);
+}
+
+function hitungJajar() {
+  const a = parseFloat(document.getElementById('jj-a').value);
+  const t = parseFloat(document.getElementById('jj-t').value);
+  const s = parseFloat(document.getElementById('jj-s').value);
+  const L = a * t;
+  const K = (!isNaN(s)) ? 2*(a+s) : '?';
+  showBangun('jj-result', `Luas = ${a}×${t} = <b>${L}</b> &nbsp;|&nbsp; Keliling = 2×(${a}+${s}) = <b>${K}</b>`);
+}
+
+// ================== PERSENTASE ==================
+function hitungPersen() {
+  const n = parseFloat(document.getElementById('ps-nilai').value);
+  const t = parseFloat(document.getElementById('ps-total').value);
+  const p = +(n/t*100).toFixed(4);
+  document.getElementById('ps-result').classList.add('show');
+  document.getElementById('ps-val').textContent = `${p}%`;
+}
+
+function hitungDiskon() {
+  const h = parseFloat(document.getElementById('dk-harga').value);
+  const p = parseFloat(document.getElementById('dk-persen').value);
+  const potongan = h * p / 100;
+  const bayar = h - potongan;
+  document.getElementById('dk-result').classList.add('show');
+  document.getElementById('dk-val').textContent = `Rp ${bayar.toLocaleString('id-ID')}`;
+  document.getElementById('dk-detail').innerHTML = `Harga asal: Rp ${h.toLocaleString('id-ID')}<br>Potongan ${p}%: Rp ${potongan.toLocaleString('id-ID')}`;
+}
+
+function hitungBunga() {
+  const M = parseFloat(document.getElementById('bg-modal').value);
+  const r = parseFloat(document.getElementById('bg-rate').value);
+  const t = parseFloat(document.getElementById('bg-waktu').value);
+  const bunga = M * r / 100 * (t / 12);
+  const total = M + bunga;
+  document.getElementById('bg-result').classList.add('show');
+  document.getElementById('bg-val').textContent = `Rp ${total.toLocaleString('id-ID')}`;
+  document.getElementById('bg-detail').innerHTML = `Modal: Rp ${M.toLocaleString('id-ID')}<br>Bunga ${t} bulan: Rp ${bunga.toLocaleString('id-ID')}`;
+}
+
+function hitungRasio() {
+  const total = parseFloat(document.getElementById('rs-total').value);
+  const a = parseFloat(document.getElementById('rs-a').value);
+  const b = parseFloat(document.getElementById('rs-b').value);
+  const bagA = +(total * a / (a + b)).toFixed(4);
+  const bagB = +(total * b / (a + b)).toFixed(4);
+  document.getElementById('rs-result').classList.add('show');
+  document.getElementById('rs-val').innerHTML = `Bagian A = <b>${bagA}</b> &nbsp;|&nbsp; Bagian B = <b>${bagB}</b>`;
+}
+
+// ================== STATISTIKA ==================
+function hitungStatistik() {
+  const raw = document.getElementById('stat-data').value;
+  const data = raw.split(',').map(s => parseFloat(s.trim())).filter(n => !isNaN(n));
+  if (data.length === 0) return;
+  data.sort((a, b) => a - b);
+  const n = data.length;
+  const mean = +(data.reduce((s, v) => s + v, 0) / n).toFixed(4);
+  const median = n % 2 === 0 ? (data[n/2-1] + data[n/2]) / 2 : data[Math.floor(n/2)];
+  const freq = {};
+  data.forEach(v => freq[v] = (freq[v]||0)+1);
+  const maxFreq = Math.max(...Object.values(freq));
+  const modus = Object.keys(freq).filter(k => freq[k] === maxFreq).join(', ');
+  const jangkauan = data[n-1] - data[0];
+  document.getElementById('stat-result').classList.add('show');
+  document.getElementById('stat-val').innerHTML = `
+    <span class="tag">Mean</span>${mean} &nbsp;
+    <span class="tag">Median</span>${median} &nbsp;
+    <span class="tag">Modus</span>${modus}
+  `;
+  document.getElementById('stat-detail').innerHTML = `
+    Jangkauan: ${jangkauan}<br>
+    Nilai min: ${data[0]} &nbsp;|&nbsp; Nilai maks: ${data[n-1]}<br>
+    Jumlah data: ${n}<br>
+    Data terurut: ${data.join(', ')}
+  `;
+}
+
+// ================== BILANGAN ==================
+function hitungFaktor() {
+  const n = parseInt(document.getElementById('fk-n').value);
+  if (!n || n < 2) return;
+  const f = primeFactors(n);
+  const g = groupFactors(f);
+  document.getElementById('fk-result').classList.add('show');
+  document.getElementById('fk-val').innerHTML = `${n} = ${formatFactors(n)}`;
+  const allFactors = [];
+  for (let i = 1; i <= n; i++) { if (n % i === 0) allFactors.push(i); }
+  document.getElementById('fk-detail').textContent = `Semua faktor: ${allFactors.join(', ')}`;
+}
+
+function isPrime(n) {
+  if (n < 2) return false;
+  if (n === 2) return true;
+  if (n % 2 === 0) return false;
+  for (let i = 3; i <= Math.sqrt(n); i += 2) { if (n % i === 0) return false; }
+  return true;
+}
+
+function cekPrima() {
+  const n = parseInt(document.getElementById('pr-n').value);
+  const prima = isPrime(n);
+  document.getElementById('pr-result').classList.add('show');
+  document.getElementById('pr-val').textContent = prima ? `${n} adalah bilangan PRIMA` : `${n} BUKAN bilangan prima`;
+  if (!prima && n > 1) {
+    document.getElementById('pr-detail').innerHTML = `Faktorisasi: ${n} = ${formatFactors(n)}`;
+  } else {
+    document.getElementById('pr-detail').textContent = prima ? 'Hanya bisa dibagi 1 dan dirinya sendiri.' : '';
+  }
+}
+
+function listPrima() {
+  const n = parseInt(document.getElementById('lp-n').value);
+  const primas = [];
+  for (let i = 2; i <= Math.min(n, 500); i++) { if (isPrime(i)) primas.push(i); }
+  document.getElementById('lp-result').classList.add('show');
+  document.getElementById('lp-val').innerHTML = primas.map(p => `<span class="tag" style="margin-bottom:4px;">${p}</span>`).join(' ');
+}
+
+// ================== BANGUN RUANG ==================
+function hitungKubus() {
+  const s = parseFloat(document.getElementById('kb-s').value);
+  if (isNaN(s)) return;
+  const V = s ** 3;
+  const LP = 6 * s * s;
+  document.getElementById('kb-result').classList.add('show');
+  document.getElementById('kb-val').innerHTML = `Volume = <b>${+V.toFixed(4)}</b> satuan³`;
+  document.getElementById('kb-detail').innerHTML = `Luas Permukaan = 6 × ${s}² = <b>${+LP.toFixed(4)}</b> satuan²<br>Diagonal sisi = ${s}√2 = <b>${+(s*Math.sqrt(2)).toFixed(4)}</b><br>Diagonal ruang = ${s}√3 = <b>${+(s*Math.sqrt(3)).toFixed(4)}</b>`;
+}
+
+function hitungBalok() {
+  const p = parseFloat(document.getElementById('bl-p').value);
+  const l = parseFloat(document.getElementById('bl-l').value);
+  const t = parseFloat(document.getElementById('bl-t').value);
+  if (isNaN(p)||isNaN(l)||isNaN(t)) return;
+  const V = p * l * t;
+  const LP = 2 * (p*l + p*t + l*t);
+  const dr = Math.sqrt(p*p + l*l + t*t);
+  document.getElementById('bl-result').classList.add('show');
+  document.getElementById('bl-val').innerHTML = `Volume = <b>${+V.toFixed(4)}</b> satuan³`;
+  document.getElementById('bl-detail').innerHTML = `Luas Permukaan = 2(pl + pt + lt) = <b>${+LP.toFixed(4)}</b> satuan²<br>Diagonal ruang = √(p²+l²+t²) = <b>${+dr.toFixed(4)}</b>`;
+}
+
+function hitungTabung() {
+  const r = parseFloat(document.getElementById('tb-r').value);
+  const t = parseFloat(document.getElementById('tb-t').value);
+  if (isNaN(r)||isNaN(t)) return;
+  const V = +(Math.PI * r * r * t).toFixed(4);
+  const LP = +(2 * Math.PI * r * (r + t)).toFixed(4);
+  const LA = +(2 * Math.PI * r * t).toFixed(4);
+  document.getElementById('tb-result').classList.add('show');
+  document.getElementById('tb-val').innerHTML = `Volume = <b>${V}</b> satuan³`;
+  document.getElementById('tb-detail').innerHTML = `Luas Selimut = 2πrt = <b>${LA}</b> satuan²<br>Luas Permukaan = 2πr(r+t) = <b>${LP}</b> satuan²`;
+}
+
+function hitungKerucut() {
+  const r = parseFloat(document.getElementById('kr-r').value);
+  const t = parseFloat(document.getElementById('kr-t').value);
+  if (isNaN(r)||isNaN(t)) return;
+  const s = Math.sqrt(r*r + t*t);
+  const V = +(1/3 * Math.PI * r * r * t).toFixed(4);
+  const LP = +(Math.PI * r * (r + s)).toFixed(4);
+  const LS = +(Math.PI * r * s).toFixed(4);
+  document.getElementById('kr-result').classList.add('show');
+  document.getElementById('kr-val').innerHTML = `Volume = <b>${V}</b> satuan³`;
+  document.getElementById('kr-detail').innerHTML = `Garis pelukis (s) = √(r²+t²) = <b>${+s.toFixed(4)}</b><br>Luas Selimut = πrs = <b>${LS}</b> satuan²<br>Luas Permukaan = πr(r+s) = <b>${LP}</b> satuan²`;
+}
+
+function hitungBola() {
+  const r = parseFloat(document.getElementById('bo-r').value);
+  if (isNaN(r)) return;
+  const V = +(4/3 * Math.PI * r * r * r).toFixed(4);
+  const LP = +(4 * Math.PI * r * r).toFixed(4);
+  document.getElementById('bo-result').classList.add('show');
+  document.getElementById('bo-val').innerHTML = `Volume = <b>${V}</b> satuan³`;
+  document.getElementById('bo-detail').innerHTML = `Luas Permukaan = 4πr² = <b>${LP}</b> satuan²`;
+}
+
+function hitungPrisma() {
+  const a = parseFloat(document.getElementById('pr2-a').value);
+  const t = parseFloat(document.getElementById('pr2-t').value);
+  const p = parseFloat(document.getElementById('pr2-p').value);
+  const s1 = parseFloat(document.getElementById('pr2-s1').value);
+  const s2 = parseFloat(document.getElementById('pr2-s2').value);
+  const s3 = parseFloat(document.getElementById('pr2-s3').value);
+  if (isNaN(a)||isNaN(t)||isNaN(p)) return;
+  const lasSeg = 0.5 * a * t;
+  const V = lasSeg * p;
+  let LP = '';
+  if (!isNaN(s1)&&!isNaN(s2)&&!isNaN(s3)) {
+    const lp = 2*lasSeg + (s1+s2+s3)*p;
+    LP = `<br>Luas Permukaan = 2×alas + keliling×panjang = <b>${+lp.toFixed(4)}</b> satuan²`;
+  }
+  document.getElementById('pr2-result').classList.add('show');
+  document.getElementById('pr2-val').innerHTML = `Volume = <b>${+V.toFixed(4)}</b> satuan³`;
+  document.getElementById('pr2-detail').innerHTML = `Luas alas segitiga = ½×${a}×${t} = <b>${+lasSeg.toFixed(4)}</b>${LP}`;
+}
+
+// ================== SKALA & PERBANDINGAN ==================
+function showSubTabNested(group, id) {
+  ['carireal','caripeta','cariskala'].forEach(k => {
+    document.getElementById(group+'-'+k).style.display = 'none';
+    const btn = document.getElementById(group+'-'+k+'-btn');
+    if (btn) btn.classList.remove('active');
+  });
+  document.getElementById(group+'-'+id).style.display = 'block';
+  const btn = document.getElementById(group+'-'+id+'-btn');
+  if (btn) btn.classList.add('active');
+}
+
+function hitungSkala1() {
+  const scale = parseFloat(document.getElementById('sk-scale1').value);
+  const peta = parseFloat(document.getElementById('sk-peta1').value);
+  if (isNaN(scale)||isNaN(peta)) return;
+  const nyataM = peta * scale / 100; // cm ke m
+  const nyataKm = nyataM / 1000;
+  document.getElementById('sk1-result').classList.add('show');
+  document.getElementById('sk1-val').textContent = `${+nyataKm.toFixed(4)} km`;
+  document.getElementById('sk1-detail').innerHTML = `Skala 1:${scale} → Jarak nyata = ${peta} cm × ${scale} = ${peta*scale} cm = ${+nyataM.toFixed(2)} m = <b>${+nyataKm.toFixed(4)} km</b>`;
+}
+
+function hitungSkala2() {
+  const scale = parseFloat(document.getElementById('sk-scale2').value);
+  const nyata = parseFloat(document.getElementById('sk-nyata2').value);
+  if (isNaN(scale)||isNaN(nyata)) return;
+  const petaCm = (nyata * 1000 * 100) / scale;
+  document.getElementById('sk2-result').classList.add('show');
+  document.getElementById('sk2-val').textContent = `${+petaCm.toFixed(4)} cm`;
+  document.getElementById('sk2-detail').innerHTML = `Jarak peta = (${nyata} km × 100.000 cm) ÷ ${scale} = <b>${+petaCm.toFixed(4)} cm</b>`;
+}
+
+function hitungSkala3() {
+  const petaCm = parseFloat(document.getElementById('sk-peta3').value);
+  const nyataKm = parseFloat(document.getElementById('sk-nyata3').value);
+  if (isNaN(petaCm)||isNaN(nyataKm)) return;
+  const n = Math.round((nyataKm * 1000 * 100) / petaCm);
+  document.getElementById('sk3-result').classList.add('show');
+  document.getElementById('sk3-val').textContent = `1 : ${n.toLocaleString('id-ID')}`;
+}
+
+function hitungSenilai() {
+  const a1 = parseFloat(document.getElementById('sn-a1').value);
+  const b1 = parseFloat(document.getElementById('sn-b1').value);
+  const a2 = parseFloat(document.getElementById('sn-a2').value);
+  const b2input = document.getElementById('sn-b2').value;
+  let hasil, label;
+  if (b2input === '' || b2input === '?') {
+    hasil = (b1 * a2) / a1;
+    label = `b₂ = (b₁ × a₂) / a₁ = (${b1} × ${a2}) / ${a1} = <b>${+hasil.toFixed(4)}</b>`;
+  } else {
+    const b2 = parseFloat(b2input);
+    hasil = (b2 * a1) / b1;
+    label = `a₂ = (a₁ × b₂) / b₁ = (${a1} × ${b2}) / ${b1} = <b>${+hasil.toFixed(4)}</b>`;
+  }
+  showResult('sn-result', label, null, `<div class="step-item"><div class="step-num">✓</div><div>Perbandingan senilai: a₁/b₁ = a₂/b₂</div></div>`);
+}
+
+function hitungBerbalik() {
+  const a1 = parseFloat(document.getElementById('bv-a1').value);
+  const b1 = parseFloat(document.getElementById('bv-b1').value);
+  const a2 = parseFloat(document.getElementById('bv-a2').value);
+  const b2input = document.getElementById('bv-b2').value;
+  let hasil, label;
+  if (b2input === '' || b2input === '?') {
+    hasil = (a1 * b1) / a2;
+    label = `b₂ = (a₁ × b₁) / a₂ = (${a1} × ${b1}) / ${a2} = <b>${+hasil.toFixed(4)}</b>`;
+  } else {
+    const b2 = parseFloat(b2input);
+    hasil = (a2 * b2) / b1;
+    label = `a₂ = (a₂ × b₂) / b₁ = <b>${+hasil.toFixed(4)}</b>`;
+  }
+  showResult('bv-result', label, null, `<div class="step-item"><div class="step-num">✓</div><div>Perbandingan berbalik nilai: a₁ × b₁ = a₂ × b₂</div></div>`);
+}
+
+// ================== KONVERSI SATUAN ==================
+const panjangToM = { km:1000, hm:100, dam:10, m:1, dm:0.1, cm:0.01, mm:0.001 };
+const beratToG  = { ton:1000000, kw:100000, kg:1000, hg:100, dag:10, g:1, mg:0.001 };
+const waktuToDetik = { tahun:31536000, bulan:2592000, minggu:604800, hari:86400, jam:3600, menit:60, detik:1 };
+
+function konversiPanjang() {
+  const val = parseFloat(document.getElementById('kv-p-val').value);
+  const from = document.getElementById('kv-p-from').value;
+  const to = document.getElementById('kv-p-to').value;
+  const hasil = val * panjangToM[from] / panjangToM[to];
+  document.getElementById('kvp-result').classList.add('show');
+  document.getElementById('kvp-val').textContent = `${+hasil.toFixed(6)} ${to}`;
+  document.getElementById('kvp-detail').textContent = `${val} ${from} = ${+hasil.toFixed(6)} ${to}`;
+}
+
+function konversiBerat() {
+  const val = parseFloat(document.getElementById('kv-b-val').value);
+  const from = document.getElementById('kv-b-from').value;
+  const to = document.getElementById('kv-b-to').value;
+  const hasil = val * beratToG[from] / beratToG[to];
+  document.getElementById('kvb-result').classList.add('show');
+  document.getElementById('kvb-val').textContent = `${+hasil.toFixed(6)} ${to}`;
+  document.getElementById('kvb-detail').textContent = `${val} ${from} = ${+hasil.toFixed(6)} ${to}`;
+}
+
+function konversiWaktu() {
+  const val = parseFloat(document.getElementById('kv-w-val').value);
+  const from = document.getElementById('kv-w-from').value;
+  const to = document.getElementById('kv-w-to').value;
+  const hasil = val * waktuToDetik[from] / waktuToDetik[to];
+  document.getElementById('kvw-result').classList.add('show');
+  document.getElementById('kvw-val').textContent = `${+hasil.toFixed(6)} ${to}`;
+  document.getElementById('kvw-detail').textContent = `${val} ${from} = ${+hasil.toFixed(6)} ${to}`;
+}
+
+function konversiSuhu() {
+  const val = parseFloat(document.getElementById('kv-s-val').value);
+  const from = document.getElementById('kv-s-from').value;
+  const to = document.getElementById('kv-s-to').value;
+  // Convert to Celsius first
+  let C;
+  if (from === 'C') C = val;
+  else if (from === 'F') C = (val - 32) * 5/9;
+  else if (from === 'K') C = val - 273.15;
+  else if (from === 'R') C = val * 5/4;
+  // Convert from Celsius to target
+  let hasil;
+  if (to === 'C') hasil = C;
+  else if (to === 'F') hasil = C * 9/5 + 32;
+  else if (to === 'K') hasil = C + 273.15;
+  else if (to === 'R') hasil = C * 4/5;
+  const names = { C:'Celsius', F:'Fahrenheit', K:'Kelvin', R:'Reamur' };
+  document.getElementById('kvs-result').classList.add('show');
+  document.getElementById('kvs-val').textContent = `${+hasil.toFixed(4)} °${to}`;
+  document.getElementById('kvs-detail').innerHTML = `${val}° ${names[from]} = <b>${+hasil.toFixed(4)}° ${names[to]}</b>`;
+}
+
+const luasToM2 = { km2:1e6, hm2:1e4, dam2:1e2, m2:1, dm2:0.01, cm2:0.0001, mm2:0.000001 };
+
+function konversiLuas() {
+  const val = parseFloat(document.getElementById('kv-l-val').value);
+  const from = document.getElementById('kv-l-from').value;
+  const to = document.getElementById('kv-l-to').value;
+  const hasil = val * luasToM2[from] / luasToM2[to];
+  const label = { km2:'km²', hm2:'hm² (ha)', dam2:'dam² (are)', m2:'m²', dm2:'dm²', cm2:'cm²', mm2:'mm²' };
+  document.getElementById('kvl-result').classList.add('show');
+  document.getElementById('kvl-val').textContent = `${+hasil.toFixed(6)} ${label[to]}`;
+  document.getElementById('kvl-detail').textContent = `${val} ${label[from]} = ${+hasil.toFixed(6)} ${label[to]}`;
+}
+</script>
+</body>
+</html>
