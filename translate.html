@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Translate Minimalis</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&display=swap');
+  :root {
+    --bg: #ffffff; --surface: #ffffff; --surface2: #f4f4f5; --border: #e4e4e7;
+    --accent: #18181b; --accent-hover: #27272a; --text: #09090b; --muted: #71717a; --radius: 8px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #09090b; --surface: #09090b; --surface2: #18181b; --border: #27272a;
+      --accent: #ffffff; --accent-hover: #e4e4e7; --text: #fafafa; --muted: #a1a1aa;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Space Grotesk', sans-serif; background: var(--bg); color: var(--text);
+    min-height: 100vh; padding: 40px 20px; display: flex; justify-content: center; align-items: center;
+  }
+  .container { max-width: 900px; width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 40px; }
+  .header { margin-bottom: 32px; border-bottom: 1px solid var(--border); padding-bottom: 20px; }
+  .section-title { font-size: 32px; font-weight: 700; letter-spacing: -0.5px; text-transform: uppercase; margin-bottom: 4px; }
+  .section-sub { color: var(--muted); font-size: 14px; }
+  .tr-lang-select {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border); color: var(--text);
+    border-radius: var(--radius); padding: 12px 14px; font-family: 'Space Grotesk', sans-serif;
+    font-size: 14px; font-weight: 500; outline: none; cursor: pointer; appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2371717a' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 14px center; padding-right: 36px;
+  }
+  .tr-textarea {
+    width: 100%; min-height: 220px; background: var(--surface); border: 1px solid var(--border);
+    border-bottom: none; border-radius: var(--radius) var(--radius) 0 0; color: var(--text);
+    font-family: 'Space Grotesk', sans-serif; font-size: 16px; line-height: 1.6; padding: 18px; outline: none; resize: vertical;
+  }
+  .tr-output-box {
+    width: 100%; min-height: 220px; background: var(--surface2); border: 1px solid var(--border);
+    border-bottom: none; border-radius: var(--radius) var(--radius) 0 0; color: var(--text); font-size: 16px; line-height: 1.6; padding: 18px; word-break: break-word;
+  }
+  .btn-primary {
+    background: var(--accent); color: var(--surface); border: 1px solid var(--accent); border-radius: var(--radius);
+    padding: 14px 36px; font-size: 15px; font-family: 'Space Grotesk', sans-serif; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.5px; cursor: pointer; white-space: nowrap;
+  }
+  .btn-primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 24px; }
+  .tr-quick {
+    background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 4px;
+    padding: 6px 14px; font-family: 'Space Grotesk', sans-serif; font-size: 13px; cursor: pointer; white-space: nowrap;
+  }
+  .tr-quick:hover { background: var(--accent); color: var(--surface); border-color: var(--accent); }
+  .control-bar {
+    display: flex; align-items: center; justify-content: space-between; padding: 10px 14px;
+    background: var(--surface2); border: 1px solid var(--border); border-top: none; border-radius: 0 0 var(--radius) var(--radius);
+  }
+  .icon-btn { background: none; border: none; color: var(--muted); cursor: pointer; font-size: 14px; padding: 4px 8px; border-radius: 4px; }
+  .icon-btn:hover { color: var(--text); background: var(--border); }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .tr-spinner { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--muted); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 8px; }
+  @media (max-width: 768px) { .grid-container { grid-template-columns: 1fr !important; } .container { padding: 20px; } }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="section-title">Translate</div>
+    <div class="section-sub">Terjemahkan teks ke berbagai bahasa secara instan</div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;margin-bottom:20px;">
+    <div>
+      <label style="font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px;">DARI</label>
+      <select id="tr-from" class="tr-lang-select" onchange="onLangChange()">
+        <option value="auto">🔍 Deteksi Otomatis</option>
+        <option value="id">Indonesia</option><option value="en">Inggris</option><option value="ar">Arab</option>
+        <option value="zh">Mandarin</option><option value="ja">Jepang</option><option value="ko">Korea</option>
+      </select>
+    </div>
+    <button id="tr-swap-btn" onclick="swapLangs()" style="background:var(--surface2);border:1px solid var(--border);color:var(--text);border-radius:var(--radius);width:42px;height:42px;font-size:16px;cursor:pointer;margin-top:18px;">⇄</button>
+    <div>
+      <label style="font-size:11px;color:var(--muted);font-weight:700;display:block;margin-bottom:6px;">KE</label>
+      <select id="tr-to" class="tr-lang-select">
+        <option value="id">Indonesia</option><option value="en" selected>Inggris</option><option value="ar">Arab</option>
+        <option value="zh">Mandarin</option><option value="ja">Jepang</option><option value="ko">Korea</option>
+      </select>
+    </div>
+  </div>
+  <div class="grid-container" style="display:grid;grid-template-columns:1fr 1fr;gap:20px;">
+    <div>
+      <textarea id="tr-input" class="tr-textarea" placeholder="Ketik atau tempel teks di sini…" oninput="onTrInput()" maxlength="5000"></textarea>
+      <div class="control-bar">
+        <span id="tr-charcount" style="font-size:11px;color:var(--muted)">0 / 5000</span>
+        <div style="display:flex;gap:4px;">
+          <button class="icon-btn" onclick="clearTrInput()">✕ Hapus</button>
+          <button class="icon-btn" onclick="speakText('tr-input','tr-from')">🔊 Dengar</button>
+        </div>
+      </div>
+    </div>
+    <div>
+      <div id="tr-output" class="tr-output-box"><span style="color:var(--muted);font-size:14px;">Hasil terjemahan...</span></div>
+      <div class="control-bar">
+        <span id="tr-detected" style="font-size:11px;color:var(--muted);font-style:italic;"></span>
+        <div style="display:flex;gap:4px;">
+          <button class="icon-btn" onclick="copyTranslation()">📋 Salin</button>
+          <button class="icon-btn" onclick="speakText('tr-output','tr-to')">🔊 Dengar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div style="display:flex;justify-content:center;margin-top:24px;"><button class="btn-primary" onclick="doTranslate()">Terjemahkan</button></div>
+  <div id="tr-loading" style="display:none;text-align:center;margin-top:16px;color:var(--muted);"><span class="tr-spinner"></span> Menerjemahkan…</div>
+</div>
+<script>
+let trDebounce = null;
+const langNames = { auto:'Deteksi Otomatis', id:'Indonesia', en:'Inggris', ar:'Arab', zh:'Mandarin', ja:'Jepang', ko:'Korea' };
+function onTrInput() {
+  const val = document.getElementById('tr-input').value;
+  document.getElementById('tr-charcount').textContent = val.length + ' / 5000';
+  clearTimeout(trDebounce);
+  if (val.trim().length > 2) { trDebounce = setTimeout(doTranslate, 900); }
+  else { document.getElementById('tr-output').innerHTML = '<span style="color:var(--muted);font-size:14px;">Hasil terjemahan...</span>'; document.getElementById('tr-detected').textContent = ''; }
+}
+function onLangChange() {
+  const from = document.getElementById('tr-from').value;
+  document.getElementById('tr-swap-btn').style.opacity = from === 'auto' ? '.4' : '1';
+}
+function swapLangs() {
+  const from = document.getElementById('tr-from'), to = document.getElementById('tr-to'); if (from.value === 'auto') return;
+  const tmp = from.value; from.value = to.value; to.value = tmp;
+  const inputEl = document.getElementById('tr-input'), outText = document.getElementById('tr-output').dataset.raw || '';
+  if (outText) { inputEl.value = outText; doTranslate(); }
+}
+async function doTranslate() {
+  const text = document.getElementById('tr-input').value.trim(); if (!text) return;
+  const from = document.getElementById('tr-from').value, to = document.getElementById('tr-to').value;
+  const outputEl = document.getElementById('tr-output'), loadingEl = document.getElementById('tr-loading'), detectedEl = document.getElementById('tr-detected');
+  loadingEl.style.display = 'block'; outputEl.innerHTML = '';
+  try {
+    const langPair = (from === 'auto' ? 'autodetect' : from) + '|' + to;
+    const res = await fetch(`https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${langPair}`);
+    const data = await res.json();
+    if (data.responseStatus === 200) {
+      const txt = data.responseData.translatedText; outputEl.innerHTML = txt; outputEl.dataset.raw = txt;
+      detectedEl.textContent = from === 'auto' ? `Terdeteksi: ${langNames[data.responseData.detectedLanguage]||''}` : `${langNames[from]} → ${langNames[to]}`;
+    } else { outputEl.innerHTML = '⚠️ Gagal.'; }
+  } catch(e) { outputEl.innerHTML = '❌ Error Koneksi.'; }
+  loadingEl.style.display = 'none';
+}
+function clearTrInput() { document.getElementById('tr-input').value = ''; onTrInput(); }
+function copyTranslation() {
+  const text = document.getElementById('tr-output').dataset.raw || ''; if(!text) return;
+  navigator.clipboard.writeText(text).then(() => { alert('Tersalin!'); });
+}
+function speakText(elId, langSelId) {
+  const el = document.getElementById(elId), text = elId === 'tr-input' ? el.value : (el.dataset.raw || ''); if (!text) return;
+  const utterance = new SpeechSynthesisUtterance(text); utterance.lang = document.getElementById(langSelId).value === 'auto' ? 'id' : document.getElementById(langSelId).value;
+  window.speechSynthesis.cancel(); window.speechSynthesis.speak(utterance);
+}
+</script>
+</body>
+</html>
